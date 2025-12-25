@@ -40,6 +40,17 @@ class BasicTestSuite(unittest.TestCase):
         result = bucket_archive.verify_file_manifest(f'{self.test_base_dir}/file_manifest.csv')
         assert(result == False)
 
+        # Temp Trash
+        import glob
+        INPUT_DIR = "/Volumes/X9Pro4TB/ARCHIVE/verified_buckets"
+        csv_files = sorted(glob.glob(f"{INPUT_DIR}/*/file_manifest.csv"))
+        groups, dupes = bucket_archive.group_files(csv_files)
 
+        # for index, group in enumerate(groups):
+        #     total_size = sum(int(file["Bytes"]) for file in group)
+        #     print(f"group {index}, {total_size / (1000**3):.2f} GB: contains {len(group)} files")
+
+        bucket_archive.write_chunks(groups, f'{INPUT_DIR}/test_chunks')
+        bucket_archive.write_chunks([dupes], f'{INPUT_DIR}/test_chunks', chunk_prefix = "DUP-", start_chunk = 1)
 if __name__ == '__main__':
     unittest.main()
