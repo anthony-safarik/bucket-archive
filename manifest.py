@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#TODO improve this by defining source better. should it be assets or file_manifest.csv? add Origin to header?
+
 import os
 import csv
 import hashlib

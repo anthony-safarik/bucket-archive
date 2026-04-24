@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# rev 20260217
+
 import csv
 import glob
 import time
@@ -131,51 +131,6 @@ class Chunker:
             chunks.append(current_chunk)
 
         return chunks, [duplicates]
-
-
-    # def group_files(self, csv_files, ignore_dupes = True):
-    #     oversized = []
-    #     duplicates = []
-    #     chunks = []
-    #     current_chunk = []
-    #     current_size = 0
-
-    #     for csv_file in csv_files:
-    #         with open(csv_file, newline='', encoding='utf-8') as f:
-    #             reader = csv.DictReader(f)
-                
-    #             for row in reader:
-    #                 file_path = row["File Path"]
-    #                 size = int(row["Bytes"])
-    #                 md5 = row["MD5"]
-    #                 timestamp = row["Timestamp"]
-    #                 row["Origin"] = csv_file
-
-    #                 # Check for oversized
-    #                 if size > self.chunk_size:
-    #                     oversized.append(row)
-    #                     continue
-
-    #                 # Check for duplicates
-    #                 if not ignore_dupes and md5 in self.seen_md5:
-    #                     duplicates.append(row)
-    #                     continue
-    #                 self.seen_md5.add(md5)
-
-    #                 # If adding this file exceeds self.chunk_size, start a new chunk
-    #                 if current_size + size > self.chunk_size:
-    #                     chunks.append(current_chunk)
-    #                     current_chunk = []
-    #                     current_size = 0
-
-    #                 current_chunk.append(row)
-    #                 current_size += size
-
-    #         # Add the last chunk if not empty
-    #         if current_chunk:
-    #             chunks.append(current_chunk)            
-
-    #     return chunks, [oversized], [duplicates]
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
