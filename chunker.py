@@ -20,7 +20,7 @@ class Chunker:
         self.grouped_csvs = []
 
         try:
-            self.chunk_size = int(chunk_size_gb) * 1000**3
+            self.chunk_size = float(chunk_size_gb) * 1000**3
             print(f"Using Chunk Size: {chunk_size_gb} GB")
         except:
             self.chunk_size = 500 * 1000**3
@@ -124,6 +124,7 @@ class Chunker:
 
                     current_chunk.append(row)
                     current_size += size
+
             self.grouped_csvs.append(csv_file)
 
         # Add the last chunk if not empty
