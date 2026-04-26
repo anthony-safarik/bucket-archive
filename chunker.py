@@ -46,13 +46,15 @@ class Chunker:
         
         csv_files = sorted(glob.glob(f"{self.input_dir}/*/file_manifest.csv"))
 
-        chunks, duplicates = self.group_files(csv_files)
+        chunks, duplicates, oversized = self.group_files(csv_files)
 
         prefix_chunks = f'chunk_{self.init_time}_'
         prefix_duplicates = f'duplicates_{self.init_time}_'
+        prefix_oversized = f'oversized_{self.init_time}_'
 
         self.write_csv_chunks(chunks,prefix_chunks)
         self.write_csv_chunks(duplicates,prefix_duplicates)
+        self.write_csv_chunks(oversized,prefix_oversized)
         self.dump_md5_pkl()
 
     def retire_groups(self):
@@ -94,6 +96,7 @@ class Chunker:
     def group_files(self, csv_files):
         # seen_md5 = self.seen_md5
         duplicates = []
+        oversized = []
         chunks = []
         current_chunk = []
         current_size = 0
@@ -109,9 +112,13 @@ class Chunker:
                     md5 = row["MD5"]
                     timestamp = row["Timestamp"]
 
+                    # Check for oversized
+                    if size > self.chunk_size:
+                        oversized.append(row)
+                        continue
+
                     # Check for duplicates
                     if not self.ignore_dupes and md5 in self.seen_md5:
-                    # if md5 in self.seen_md5:
                         duplicates.append(row)
                         continue
                     self.seen_md5.add(md5)
@@ -131,7 +138,7 @@ class Chunker:
         if current_chunk:
             chunks.append(current_chunk)
 
-        return chunks, [duplicates]
+        return chunks, [duplicates], [oversized]
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))

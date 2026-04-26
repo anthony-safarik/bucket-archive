@@ -67,7 +67,7 @@ class TestBasic(unittest.TestCase):
         chunker_load_a = f"{self.test_root}/chunker/loads/test-files_{self.init_time}"
 
 
-        file_sizes = list(range(1, 9))
+        file_sizes = list(range(1, 16))
         self.make_some_files(chunker_load_a,file_sizes,1)
         manifest = Manifest(f"{chunker_load_a}/assets")
         manifest_file = manifest.generate_file_manifest()
@@ -76,20 +76,40 @@ class TestBasic(unittest.TestCase):
         this_chunker = Chunker(chunker_load_parent,chunker_chunks_dir,bytes_to_gb,False)
         this_chunker.run()
 
-        csv_files = os.listdir(chunker_chunks_dir)
+        csv_files = sorted(os.listdir(chunker_chunks_dir))
+
+        csv_counter = 0
+        first_file_bytes = 0
+        prev_csv_total_bytes = 0
 
         for csv_file in csv_files:
             if csv_file.startswith("chunk_"):
                 csv_file = os.path.join(chunker_chunks_dir,csv_file)
                 this_csv_total_bytes = 0
+                row_counter = 0
+
                 with open(csv_file, newline='', encoding='utf-8') as f:
                     csv_reader = csv.DictReader(f)
-
                     for row in csv_reader:
+                        row_counter +=1
                         file_bytes = int(row["Bytes"])
+                        if row_counter == 1: first_file_bytes = file_bytes
                         this_csv_total_bytes += file_bytes
-                # print(csv_file,this_csv_total_bytes)
+
+                print(f'{csv_file},{this_csv_total_bytes} bytes total, {first_file_bytes} bytes for first file')
+
+                # Check that the csv is not oversized
                 assert this_csv_total_bytes <= bytes_to_chunk
+                print (f'this_csv_total_bytes {this_csv_total_bytes} <= bytes_to_chunk {bytes_to_chunk}')
+
+                csv_counter += 1
+
+                # Check that the first file of the next chunk can not fit inside the previous
+                if csv_counter > 1:
+                    assert prev_csv_total_bytes + first_file_bytes > bytes_to_chunk
+                    print(f'prev_csv_total_bytes {prev_csv_total_bytes} + first_file_bytes {first_file_bytes} > bytes_to_chunk {bytes_to_chunk}\n')
+                prev_csv_total_bytes = this_csv_total_bytes
+
 
 
 
