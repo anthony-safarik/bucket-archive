@@ -4,6 +4,7 @@ import shutil
 import time
 import csv
 import mover
+import utils
 
 from manifest import Manifest
 from chunker import Chunker
@@ -61,6 +62,81 @@ class TestBasic(unittest.TestCase):
         result = verify_manifest.verify_file_manifest(manifest_file_fail, expected_header = True)
         assert result == False
 
+    def test_mover(self):
+        print("---Testing Mover---")
+        mover_load_parent = f"{self.test_root}/mover/loads"
+        mover_chunks_dir = f"{self.test_root}/mover/chunks"
+        mover_load_a = f"{mover_load_parent}/test-files_a_{self.init_time}"
+        mover_load_b = f"{mover_load_parent}/test-files_b_{self.init_time}"
+        bytes_to_chunk = 12
+        bytes_to_gb = bytes_to_chunk / (1000**3)
+
+        # Make some files in two different loads
+        file_sizes = list(range(1, 16))
+
+        self.make_some_files(mover_load_a,file_sizes,1)
+        manifest_a = Manifest(f"{mover_load_a}/assets")
+        manifest_file_a = manifest_a.generate_file_manifest()
+
+        self.make_some_files(mover_load_b,file_sizes,1)
+        manifest_b = Manifest(f"{mover_load_b}/assets")
+        manifest_file_b = manifest_b.generate_file_manifest()
+
+        # Chunk it
+        this_chunker = Chunker(mover_load_parent,mover_chunks_dir,bytes_to_gb,False)
+        this_chunker.run()
+
+        # get the initial file summary for the loads
+        initial_file_count, initial_total_size = self.get_summary(mover_load_parent)
+
+        # the first run will just exit due to duplicate paths
+        mover.main(mover_chunks_dir)
+        second_file_count, second_total_size = self.get_summary(mover_load_parent)
+
+        # remove oversized and dups csvs
+        dup_csv = os.path.join(mover_chunks_dir,f'duplicates_{self.init_time}_0001.csv')
+        over_csv = os.path.join(mover_chunks_dir,f'oversized_{self.init_time}_0001.csv')
+        for i in (dup_csv, over_csv):
+            if os.path.exists(i):
+                os.remove(i)
+
+        null = input("PAUSED")
+        # run mover again
+        mover.main(mover_chunks_dir)
+
+        # final_file_count, final_total_size = self.get_summary(mover_load_parent)
+
+        # print (initial_file_count, initial_total_size)
+        # print (second_file_count, second_total_size)
+        # print (final_file_count, final_total_size)
+
+        assert initial_file_count == second_file_count # nothing is moved in the first run
+        assert initial_total_size == second_total_size # nothing is moved in the first run
+
+        fms = utils.glob_fm(mover_chunks_dir)
+        for fm in fms:
+            this_manifest = Manifest(fm)
+            result = this_manifest.verify_file_manifest(fm, expected_header = False)
+            assert result == True
+
+
+        fms = utils.glob_fm(mover_load_parent)
+        for i, fm in enumerate(fms, 1):
+
+            result = this_manifest.verify_file_manifest(fm, expected_header = False)
+            print(result)
+
+            #first load is moved, verify fails
+            if i == 1:
+                assert result == False
+            # second load is all duplicate so verify will pass
+            if i == 2:
+                assert result == True
+
+
+
+        shutil.rmtree(f"{self.test_root}/mover")
+
     def test_chunker(self):
         print("---Testing Chunker---")
         chunker_load_parent = f"{self.test_root}/chunker/loads"
@@ -105,14 +181,12 @@ class TestBasic(unittest.TestCase):
 
                 # Check that the csv is not oversized
                 assert this_csv_total_bytes <= bytes_to_chunk
-                # print (f'this_csv_total_bytes {this_csv_total_bytes} <= bytes_to_chunk {bytes_to_chunk}')
 
                 csv_counter += 1
 
                 # Check that the first file of the next chunk can not fit inside the previous
                 if csv_counter > 1:
                     assert prev_csv_total_bytes + first_file_bytes > bytes_to_chunk
-                    # print(f'prev_csv_total_bytes {prev_csv_total_bytes} + first_file_bytes {first_file_bytes} > bytes_to_chunk {bytes_to_chunk}\n')
                 prev_csv_total_bytes = this_csv_total_bytes
 
             # Check for handling of oversized files, dupes and path collisions (right now it should just exit)
@@ -124,8 +198,8 @@ class TestBasic(unittest.TestCase):
                         file_bytes = int(row["Bytes"])
                         file_path = row["File Path"]
                         assert bytes_to_chunk < file_bytes
-                        # print(f'{file_path.split('/')[-1]} file_bytes {file_bytes} > bytes_to_chunk {bytes_to_chunk}')
 
+        shutil.rmtree(f"{self.test_root}/chunker")
 
     @staticmethod
     def make_some_files(load_name, sizes, number_of_files =5):

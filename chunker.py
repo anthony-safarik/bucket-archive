@@ -6,6 +6,7 @@ import time
 import os
 import sys
 import pickle
+from pathlib import Path
 
 class Chunker:
     def __init__(self, input_dir, output_dir, chunk_size_gb = 500, ignore_dupes = False):
@@ -102,11 +103,12 @@ class Chunker:
         current_size = 0
 
         for csv_file in csv_files:
+            csv_full_path = str(Path(csv_file).resolve())
             with open(csv_file, newline='', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 
                 for row in reader:
-                    row["Origin"] = csv_file.replace("file_manifest.csv","assets")
+                    row["Origin"] = csv_full_path.replace("file_manifest.csv","assets")
                     file_path = row["File Path"]
                     size = int(row["Bytes"])
                     md5 = row["MD5"]
