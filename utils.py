@@ -1,5 +1,6 @@
 import hashlib
 import glob
+import csv
 
 def human_size(num):
     """Convert bytes to a human‑readable string."""
@@ -22,3 +23,9 @@ def glob_assets(dir):
 
 def glob_fm(dir):
     return sorted(glob.glob(f"{dir}/*/file_manifest.csv"))
+
+def gen_csv_rows(csv_file):
+    with open(csv_file, newline='', encoding='utf-8') as f:
+        dict_reader = csv.DictReader(f)
+        for dict in dict_reader:
+            yield dict

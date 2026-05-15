@@ -62,6 +62,44 @@ class TestBasic(unittest.TestCase):
         result = verify_manifest.verify_file_manifest(manifest_file_fail, expected_header = True)
         assert result == False
 
+    def test_mover_basic(self):
+        print("---Testing Mover-Basic---")
+        load_path = f'{self.test_root}/mover_basic/loads'
+        load_a = f'{self.test_root}/mover_basic/loads/load-a'
+        load_b = f'{self.test_root}/mover_basic/loads/load-b'
+        chunks_path = f'{self.test_root}/mover_basic/chunks'
+        gb = 3 / (1000**3)
+
+        self.make_some_files(load_a, [1,2], number_of_files =3) # make some 1 and 2 byte files
+        self.make_some_files(load_b, [5], number_of_files =1) # oversized 5 byte file
+
+        assert os.path.exists(f'{load_a}/assets/TestFiles_01bytes/TestFiles_01bytes_0.txt')
+        assert os.path.exists(f'{load_a}/assets/TestFiles_01bytes/TestFiles_01bytes_1.txt')
+        assert os.path.exists(f'{load_a}/assets/TestFiles_01bytes/TestFiles_01bytes_2.txt')
+
+        assert os.path.exists(f'{load_a}/assets/TestFiles_02bytes/TestFiles_02bytes_0.txt')
+        assert os.path.exists(f'{load_a}/assets/TestFiles_02bytes/TestFiles_02bytes_1.txt')
+        assert os.path.exists(f'{load_a}/assets/TestFiles_02bytes/TestFiles_02bytes_2.txt')
+
+
+        # Manifest it
+        this_manifest = Manifest(f"{load_a}/assets")
+        this_manifest_file = this_manifest.generate_file_manifest()
+        assert os.path.exists(f'{load_a}/file_manifest.csv')
+        null = input("PAUSED")
+
+        # Chunk it
+        this_chunker = Chunker(load_path,chunks_path, gb, False)
+        this_chunker.run()
+        null = input("PAUSED")
+
+        mover.main(chunks_path)
+        assert os.path.exists(f'{chunks_path}/chunk_0001/file_manifest.csv')
+        # assert test files exist
+        # assert dupes exist
+        null = input("PAUSED")
+
+
     def test_mover(self):
         print("---Testing Mover---")
         mover_load_parent = f"{self.test_root}/mover/loads"
@@ -100,7 +138,6 @@ class TestBasic(unittest.TestCase):
             if os.path.exists(i):
                 os.remove(i)
 
-        null = input("PAUSED")
         # run mover again
         mover.main(mover_chunks_dir)
 

@@ -49,7 +49,8 @@ class Chunker:
 
         chunks, duplicates, oversized = self.group_files(csv_files)
 
-        prefix_chunks = f'chunk_{self.init_time}_'
+        # prefix_chunks = f'chunk_{self.init_time}_'
+        prefix_chunks = f'chunk_'
         prefix_duplicates = f'duplicates_{self.init_time}_'
         prefix_oversized = f'oversized_{self.init_time}_'
 

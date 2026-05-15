@@ -13,19 +13,6 @@ def get_csv_rows(csv_file):
             rows.append(dict)
     return rows
 
-def safe_move(src, dst, md5, remove_source = True):
-    try:
-        shutil.copy2(src, dst)
-    except:
-        print (f'unable to copy {src}')
-    try:
-        md5_calculated = calculate_md5(dst)
-        assert md5_calculated == md5
-        if remove_source == True:
-            os.remove(src)
-    except:
-        print (f'unable to verify {src}')
-
 def preflight(src):
     total_bytes = 0
     all_paths = set()
@@ -67,7 +54,7 @@ def main(src):
                 csv_target_path = csv_assets_path / row['File Path']
                 csv_target_dir = csv_target_path.parent
 
-                os.makedirs(csv_target_dir, exist_ok=False)
+                os.makedirs(csv_target_dir, exist_ok=True)
 
                 percent_completed = copied_bytes/total_bytes * 100
 
@@ -76,7 +63,7 @@ def main(src):
                 try:
                     os.rename(csv_origin_path, csv_target_path)
                 except OSError:
-                    safe_move(csv_origin_path, csv_target_path, row['MD5'])
+                   print(f'unable to move {csv_origin_path}')
 
                 if os.path.exists(csv_target_path): copied_bytes += csv_bytes
                 
@@ -88,6 +75,6 @@ def main(src):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 2:
-        print("Usage: python chunker.py <input directory> (subfolders must contain file_manifest.csv)")
+        print("Usage: python mover.py <input directory> (dir containing csv files)")
     else:
         main(*sys.argv[1:])
